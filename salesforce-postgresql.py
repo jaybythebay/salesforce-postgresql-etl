@@ -53,7 +53,7 @@ def salesforce_table_description(table_name):
 
     # for key in description.iteritems():
     #     print key
-
+    #
     return description
 
 
@@ -63,20 +63,17 @@ def salesforce_date_column_for_updates(engine, object_name):
     table_description = insp.get_columns(object_name)
 
     column_name_list = [c["name"] for c in table_description]
-    # print column_name_list
 
     if 'systemmodstamp' in column_name_list:
         column_name_for_updates = 'systemmodstamp'
     elif 'lastmodifieddate' in column_name_list:
-        column_name_for_updates = 'systemmodstamp'
+        column_name_for_updates = 'lastmodifieddate'
     elif 'createddate' in column_name_list:
         column_name_for_updates = 'createddate'
     else:
         column_name_for_updates = None
 
-    # print column_name_for_updates
     return column_name_for_updates
-
 
 
 def salesforce_column_list(sf_table_description):
@@ -259,10 +256,11 @@ def check_schema_change(columns_postgresql, columns_salesforce, engine):
     # print "created table"
 
 
-def get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates):
+def get_data_last_updated_timestamp(sess, date_column):
+    # def get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates):
 
-    table_name = Table(object_name, metadata, autoload=True)
-    date_column = table_name.columns[date_column_for_updates]
+    # table_name = Table(object_name, metadata, autoload=True)
+    # date_column = table_name.columns[date_column_for_updates]
 
     max_in_db = sess.query(func.max(date_column)).one()[0]
 
@@ -279,11 +277,12 @@ def format_datetime(datetime):
     return datetime.strftime(format)
 
 
-def get_and_load_data(engine, metadata, object_name, max_in_db):
+def get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db):
 
-    table = metadata.tables[object_name]
-
-    stmt = select([table], table.c.systemmodstamp >= text(max_in_db))
+    # table = metadata.tables[object_name]
+    # stmt = select([table], table.c.systemmodstamp >= text(max_in_db))
+    stmt = select([table_definition], date_column >= text(max_in_db))
+    print stmt
 
     data = sf.query(stmt)
     lst = data["records"]
@@ -371,9 +370,9 @@ def main():
     # metadata = MetaData(bind=engine)
 
     # # Gets list of Salesforce Objects
-    # object_list = salesforce_get_objects()
-    # object_list = [o.lower() for o in object_list]
-    object_list = ('account', 'accounthistory')
+    object_list = salesforce_get_objects()
+    object_list = [o.lower() for o in object_list]
+    # object_list = ('account', 'accountpartner', 'accountshare', 'accounthistory', 'activityhistory')
     # print object_list
 
     for object_name in object_list:
@@ -383,40 +382,38 @@ def main():
         # Get Table Description From Salesforce
         sf_table_description = salesforce_table_description(object_name)
         # print sf_table_description
-        # print "Got table description
+        print "Got table description"
+        queryable = sf_table_description["queryable"]
 
+        if queryable is True:
+            # Parse Salesforce Columns to list
+            columns = salesforce_column_list(sf_table_description)
+            print "Created Column DDL"
 
-        # # Check if table exists in PostgreSQL and return column dictionary
-        #
-        # Parse Salesforce Columns to list
-        columns = salesforce_column_list(sf_table_description)
-        # print "Created DDL"
+            # Create Tables in PostgreSQL DB
+            table = Table(str(object_name).lower(), metadata, *columns, extend_existing=True)
+            # metadata.create_all(engine)
+            table.create(engine, checkfirst=True)
+            print "Created table"
 
-        # Select the proper date field to use for identifying new data
-        date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
+            # Select the proper date field to use for identifying new data
+            date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
+            print "Date Coluumn For Updates:", date_column_for_updates
 
+            # # Check schema
+            # postgresql_column_list(metadata, object_name)
+            # check_schema_change()
 
-        # Create Tables in PostgreSQL DB
-        table = Table(str(object_name).lower(), metadata, *columns, extend_existing=True)
-        # metadata.create_all(engine)
-        table.create(engine, checkfirst=True)
-        print "Created table"
+            # Create metadata for queries
+            table_definition = Table(object_name, metadata, autoload=True)
+            date_column = table_definition.columns[date_column_for_updates]
 
-        # # Check schema
-        # postgresql_column_list(metadata, object_name)
-        # check_schema_change()
+            # Get max in database
+            max_in_db = get_data_last_updated_timestamp(sess, date_column)
+            print "Got the max"
 
-        # Get max in database
-        max_in_db = get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates)
-        print max_in_db
-        print "Got the max"
-
-
-
-        #
-        # # Get Data and load data
-        # max_in_db = get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates)
-        # get_and_load_data(engine, metadata, object_name, max_in_db)
+            # Get Data and load data
+            get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db)
 
 
 if __name__ == '__main__':
