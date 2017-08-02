@@ -375,12 +375,18 @@ def main():
     # object_list = ('account', 'accountpartner', 'accountshare', 'accounthistory', 'activityhistory')
     # print object_list
 
+    prefix = "salesforce_"
+
     for object_name in object_list:
         print "---------------------"
-        print object_name
+
+        sf_table_name = str(object_name).lower()
+        object_name = prefix + sf_table_name
+        print sf_table_name
+
 
         # Get Table Description From Salesforce
-        sf_table_description = salesforce_table_description(object_name)
+        sf_table_description = salesforce_table_description(sf_table_name)
         # print sf_table_description
         print "Got table description"
         queryable = sf_table_description["queryable"]
@@ -391,29 +397,30 @@ def main():
             print "Created Column DDL"
 
             # Create Tables in PostgreSQL DB
-            table = Table(str(object_name).lower(), metadata, *columns, extend_existing=True)
+            table = Table(object_name, metadata, *columns, extend_existing=True)
             # metadata.create_all(engine)
             table.create(engine, checkfirst=True)
             print "Created table"
 
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
-            print "Date Coluumn For Updates:", date_column_for_updates
+            print "Date Column For Updates:", date_column_for_updates
 
             # # Check schema
             # postgresql_column_list(metadata, object_name)
             # check_schema_change()
 
-            # Create metadata for queries
-            table_definition = Table(object_name, metadata, autoload=True)
-            date_column = table_definition.columns[date_column_for_updates]
+            if date_column_for_updates is not None:
+                # Create metadata for queries
+                table_definition = Table(object_name, metadata, autoload=True)
+                date_column = table_definition.columns[date_column_for_updates]
 
-            # Get max in database
-            max_in_db = get_data_last_updated_timestamp(sess, date_column)
-            print "Got the max"
+                # Get max in database
+                max_in_db = get_data_last_updated_timestamp(sess, date_column)
+                print "Got the max"
 
-            # Get Data and load data
-            get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db)
+                # # Get Data and load data
+                # get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db)
 
 
 if __name__ == '__main__':
