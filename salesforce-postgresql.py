@@ -262,10 +262,9 @@ def check_schema_change(columns_postgresql, columns_salesforce, engine):
 def get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates):
 
     table_name = Table(object_name, metadata, autoload=True)
+    date_column = table_name.columns[date_column_for_updates]
 
-    max_in_db = sess.query(func.max(table_name.c.date_column_for_updates)).one()[0]
-
-    # max_in_db = sess.query(func.max(table_name.c.systemmodstamp)).one()[0]
+    max_in_db = sess.query(func.max(date_column)).one()[0]
 
     if max_in_db is None:
         max_in_db = '1999-01-01T00:00:00.000+0000'
@@ -407,9 +406,13 @@ def main():
         # postgresql_column_list(metadata, object_name)
         # check_schema_change()
 
-        # # Get max in database
-        # max_in_db = get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates)
-        # print "Got the max"
+        # Get max in database
+        max_in_db = get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates)
+        print max_in_db
+        print "Got the max"
+
+
+
         #
         # # Get Data and load data
         # max_in_db = get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates)
