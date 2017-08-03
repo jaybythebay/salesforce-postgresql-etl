@@ -277,14 +277,22 @@ def format_datetime(datetime):
     return datetime.strftime(format)
 
 
-def get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db):
+def get_and_load_data(engine, metadata, sf_table_name, object_name, table_definition, date_column, max_in_db):
 
     # table = metadata.tables[object_name]
     # stmt = select([table], table.c.systemmodstamp >= text(max_in_db))
     stmt = select([table_definition], date_column >= text(max_in_db))
     print stmt
+    print type(stmt)
 
-    data = sf.query(stmt)
+    string_query = str(stmt)
+    print "String query before: ", string_query
+    print "object_name: ", object_name, " sf_table_name: ", sf_table_name
+
+    string_query = string_query.replace(object_name, sf_table_name)
+    print string_query
+
+    data = sf.query(string_query)
     lst = data["records"]
 
     df = parse_data(lst)
@@ -367,13 +375,20 @@ def main():
     # print data
 
     metadata = MetaData()
+
     # metadata = MetaData(bind=engine)
 
     # # Gets list of Salesforce Objects
     object_list = salesforce_get_objects()
     object_list = [o.lower() for o in object_list]
-    # object_list = ('account', 'accountpartner', 'accountshare', 'accounthistory', 'activityhistory')
-    # print object_list
+    # object_list = ('account', 'collaborationgrouprecord')
+    exclude_objects = ('collaborationgrouprecord', 'contentdocumentlink', 'ideacomment', 'scontrol', 'vote')
+
+    object_list = [o for o in object_list if o not in exclude_objects]
+
+    object_list = exclude_objects
+
+    print object_list
 
     prefix = "salesforce_"
 
@@ -390,6 +405,7 @@ def main():
         # print sf_table_description
         print "Got table description"
         queryable = sf_table_description["queryable"]
+        print queryable
 
         if queryable is True:
             # Parse Salesforce Columns to list
@@ -419,8 +435,8 @@ def main():
                 max_in_db = get_data_last_updated_timestamp(sess, date_column)
                 print "Got the max"
 
-                # # Get Data and load data
-                # get_and_load_data(engine, metadata, object_name, table_definition, date_column, max_in_db)
+                # Get Data and load data
+                get_and_load_data(engine, metadata, sf_table_name, object_name, table_definition, date_column, max_in_db)
 
 
 if __name__ == '__main__':
