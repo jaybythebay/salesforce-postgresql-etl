@@ -376,17 +376,23 @@ def main():
 
     metadata = MetaData()
 
+    # https://docs.python.org/2/howto/logging.html
+    # logging.basicConfig(filename='example.log', level=logging.DEBUG)
+    # logging.debug('This message should go to the log file')
+    # logging.info('So should this')
+    # logging.warning('And this, too')
+
     # metadata = MetaData(bind=engine)
 
     # # Gets list of Salesforce Objects
     object_list = salesforce_get_objects()
     object_list = [o.lower() for o in object_list]
-    # object_list = ('account', 'collaborationgrouprecord')
+    object_list = ('opportunity', 'user', 'account')
     exclude_objects = ('collaborationgrouprecord', 'contentdocumentlink', 'ideacomment', 'scontrol', 'vote')
 
     object_list = [o for o in object_list if o not in exclude_objects]
 
-    object_list = exclude_objects
+    # object_list = exclude_objects
 
     print object_list
 
