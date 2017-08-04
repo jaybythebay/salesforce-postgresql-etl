@@ -1,6 +1,4 @@
 from simple_salesforce import Salesforce
-# from credentials_salesforce import salesforce_api
-# from credentials_postgresql import DATABASE
 from sqlalchemy import *
 from sqlalchemy.engine.url import URL
 from sqlalchemy_utils import database_exists, create_database, get_type
@@ -13,14 +11,7 @@ import logging
 
 import settings
 
-# These packages were imported for the Schema comparison which doesn't yet work
-from alembic.migration import MigrationContext
-from alembic.autogenerate import compare_metadata
-from sqlalchemy.schema import SchemaItem
-from sqlalchemy.types import TypeEngine
-from sqlalchemy import (create_engine, MetaData, Column,
-        Integer, String, Table)
-import pprint
+from sqlalchemy import (create_engine, MetaData, Column, Integer, String, Table)
 
 
 # Authenticate Salesforce
@@ -115,145 +106,6 @@ def salesforce_column_list(sf_table_description):
 
     return column_lst
 
-
-def postgresql_column_list(metadata, object):
-    # for table in metadata.tables:
-    #     print table
-
-    # for table in metadata.tables:
-    #     print table
-
-    # print "get columns function"
-    # print insp.get_columns(metadata.tables[object_name])
-    # print insp.get_columns(table_c)
-
-        # postgres_column_dict = {}
-        #
-        # results = metadata.tables[object]
-        #
-        # for col in results.c:
-        #     # print col, col.type
-        #     # print col, col.name, col.type, col.nullable, col.primary_key, col.foreign_keys
-        #     postgres_column_dict[col.name] = get_type(col)
-        #
-        # # print type(table_column_dict)
-        # return postgres_column_dict
-    pass
-
-
-def check_schema_change(columns_postgresql, columns_salesforce, engine):
-    # print type(columns_postgresql)
-    # print columns_postgresql
-    # print type(columns_salesforce)
-    # print columns_salesforce
-    # for c in columns_salesforce:
-    #     print type(c), c, c.type
-
-    insp = reflection.Inspector.from_engine(engine)
-
-    print "get columns function"
-    print insp.get_columns(columns_postgresql)
-    print insp.get_columns(columns_salesforce)
-    print type(columns_postgresql)
-    print type(columns_salesforce)
-
-    # salesforce_column_dict = {}
-    #
-    # for col in columns_salesforce:
-    #     # print col, col.type
-    #     # print col, col.name, col.type, col.nullable, col.primary_key, col.foreign_keys
-    #     salesforce_column_dict[col.name] = col.type
-    #
-    # print salesforce_column_dict
-    # print columns_postgresql
-
-    # if engine.dialect.has_table(connection, table_name):
-
-    # if engine.dialect.has_table(engine, "tmp_salesforce_table_schema"):
-    #     # Drop the tmp table
-    #     salesforce_schema_test = Table("tmp_salesforce_table_schema", metadata)
-    #     salesforce_schema_test.drop(engine)
-    #
-    # # Refresh the metadata and re-create the tmp table
-    # metadata = MetaData()
-    # salesforce_schema_test = Table("tmp_salesforce_table_schema", metadata, *columns_salesforce)
-    # salesforce_schema_test.create(engine)
-
-    # Table(object_name, metadata, *columns_salesforce)
-
-    # mc = MigrationContext.configure(engine.connect())
-
-    mc = MigrationContext.configure(engine.connect(), )
-
-    # include_object = None,
-
-    meta = metadata.reflect(engine, only=[object_name], extend_existing=True)
-    print meta
-
-
-    # diff = compare_metadata(mc, metadata)
-    # diff = compare_metadata(mc, metadata.reflect(engine, only=[object_name]))
-    # pprint.pprint(diff, indent=2, width=20)
-
-
-
-
-    # insp = reflection.Inspector.from_engine(engine)
-    # print "printing inspection"
-    # print insp.get_columns("tmp_salesforce_table_schema")
-
-    # new_columns = insp.get_columns("tmp_salesforce_table_schema")
-    # old_columns = insp.get_columns(object_name)
-
-    # new_columns = Table("tmp_salesforce_table_schema", metadata)
-    # old_columns = Table(object_name, metadata)
-    #
-    # print type(new_columns)
-    # print type(old_columns)
-
-    # if new_columns == old_columns:
-    #     print "Columns Match: ", object_name
-    # else:
-    #     print "Columns Are Different: ", object_name
-    #
-
-
-
-
-    # new_object = "new_sf_object"
-
-    # Create Tables in PostgreSQL DB
-    # table_c = Table(str(object_name).lower(), metadata, *columns_salesforce, extend_existing=True)
-    # table_c = Table(new_object, metadata, *columns_salesforce)
-
-    # mytable = Table("mytable", metadata, *columns_salesforce, extend_existing=True)
-
-    # print "print table", mytable
-
-    # insp = reflection.Inspector.from_engine(engine)
-    # print "printing inspection"
-    # print insp.get_columns(object_name)
-
-
-
-    # Check for schema changes and delete table if they don't match.
-    # columns_postgresql = postgresql_column_list(metadata.tables[object_name], table_c, engine)
-    # check_schema_change(metadata.tables[object_name], table_c, engine)
-    # print tables_changed
-
-
-    # print "get columns function"
-    # print insp.get_columns(metadata.tables[object_name])
-
-
-    # if metadata.tables[object_name] == table_c:
-    #     print "printing metadata etc", metadata.tables[object_name]
-    #     print "these suckers match"
-    # else:
-    #     print "something changed"
-    # # metadata.create_all(engine)
-    # table_c.create(engine, checkfirst=True)
-    # print "created table"
 
 
 def get_data_last_updated_timestamp(sess, date_column):
