@@ -25,26 +25,32 @@ def salesforce_get_objects():
 
     object_list = []
 
-    sf.describe()
+    try:
+        sf.describe()
+        logging.info('Retrieved objects from Salesforce')
 
-    for o in sf.describe()["sobjects"]:
-        # print o["label"]
-        # print o["name"]
-        # counter += 1
-        # print counter
-        object_list.append(o["name"])
+        for o in sf.describe()["sobjects"]:
+            # print o["label"]
+            # print o["name"]
+            # counter += 1
+            # print counter
+            object_list.append(o["name"])
+
+    except:
+        logging.warning('salesforce desribe object failed')
+        object_list = []
 
     return object_list
 
 
 def salesforce_table_description(table_name):
-    description = eval("sf." + table_name + ".describe()")
 
-    # print table_name, description["updateable"]
+    try:
+        description = eval("sf." + table_name + ".describe()")
+        logging.info('retrieved table description for %s', table_name)
+    except:
+        logging.warning('failed to retrieve table description for %s', table_name)
 
-    # for key in description.iteritems():
-    #     print key
-    #
     return description
 
 
@@ -104,15 +110,12 @@ def salesforce_column_list(sf_table_description):
 
                 column_lst.append(Column(name=str(f["name"].lower()), type_=data_type, primary_key=primary_key))
 
+    logging.info('created column list: %s', column_lst)
     return column_lst
 
 
 
 def get_data_last_updated_timestamp(sess, date_column):
-    # def get_data_last_updated_timestamp(sess, metadata, object_name, date_column_for_updates):
-
-    # table_name = Table(object_name, metadata, autoload=True)
-    # date_column = table_name.columns[date_column_for_updates]
 
     max_in_db = sess.query(func.max(date_column)).one()[0]
 
@@ -120,6 +123,8 @@ def get_data_last_updated_timestamp(sess, date_column):
         max_in_db = '1999-01-01T00:00:00.000+0000'
     else:
         max_in_db = format_datetime(max_in_db)
+
+    logging.info('max date to use for query is: %s', max_in_db)
 
     return max_in_db
 
@@ -134,22 +139,20 @@ def get_and_load_data(engine, metadata, sf_table_name, object_name, table_defini
     # table = metadata.tables[object_name]
     # stmt = select([table], table.c.systemmodstamp >= text(max_in_db))
     stmt = select([table_definition], date_column >= text(max_in_db))
-    print stmt
-    print type(stmt)
+    logging.info('database select statement from sqlalchemy: %s', stmt)
+
 
     string_query = str(stmt)
-    print "String query before: ", string_query
-    print "object_name: ", object_name, " sf_table_name: ", sf_table_name
+    salesforce_query = string_query.replace(object_name, sf_table_name)
+    logging.info('salesforce query to use with table name updated: %s', salesforce_query)
 
-    string_query = string_query.replace(object_name, sf_table_name)
-    print string_query
-
-    data = sf.query(string_query)
+    data = sf.query(salesforce_query)
     lst = data["records"]
 
     df = parse_data(lst)
     delete_updated_records(df, object_name, metadata, engine)
     load_data(df, object_name, engine)
+
 
     if data.has_key("nextRecordsUrl"):
         next_records_url = data["nextRecordsUrl"]
@@ -189,9 +192,11 @@ def load_data(df, object_name, engine):
 
     try:
         df.to_sql(object_name, engine, if_exists='append', index=False)
-        print "data loaded for:", object_name
+        logging.info('data loaded for %s: %s rows', object_name, df.shape[0])
+        print "data loaded for:", object_name, df.shape[0], "rows"
 
     except Exception as e:
+        logging.warning('error loading data for %s message: %s', object_name, e.message)
         print(e.message)
 
 
@@ -208,7 +213,36 @@ def delete_updated_records(df, object_name, metadata, engine):
         engine.execute(delete_statement)
 
 
+def objects_to_load():
+
+    # Gets list of Salesforce Objects
+    object_list = salesforce_get_objects()
+    object_list = [o.lower() for o in object_list]
+
+    if len(settings.object_whitelist) != 0:
+        object_list = [o.lower() for o in settings.object_whitelist]
+        logging.info('using the object whitelist: %s', settings.object_whitelist)
+
+    if len(settings.object_blacklist) != 0:
+        object_blacklist = [o.lower() for o in settings.object_blacklist]
+        object_list = [o for o in object_list if o.lower() not in object_blacklist]
+        logging.info('removing objects from the blacklist: %s', settings.object_blacklist)
+        print settings.object_blacklist
+
+    print object_list
+    logging.info('salesforce object list %s', object_list)
+
+
+    return object_list
+
+
+
 def main():
+
+    logging.basicConfig(filename=settings.log_file_path,
+                        format='%(asctime)s %(levelname)s:%(message)s',
+                        datefmt='%Y-%m-%d %I:%M:%S',
+                        level=logging.DEBUG)
 
     # This successfully connects to Postgres and Reads Data from a Table
     # engine = create_engine('postgresql+psycopg2://postgres:jay@localhost/test')
@@ -217,7 +251,7 @@ def main():
     if not database_exists(engine.url):
         create_database(engine.url)
 
-    print "DATABASE CREATED"
+    logging.info('connected to and created if needed: %s', engine.url)
 
     session = sessionmaker()
     session.configure(bind=engine)
@@ -227,58 +261,35 @@ def main():
     # print data
 
     metadata = MetaData()
-
-    # https://docs.python.org/2/howto/logging.html
-    # logging.basicConfig(filename='example.log', level=logging.DEBUG)
-    # logging.debug('This message should go to the log file')
-    # logging.info('So should this')
-    # logging.warning('And this, too')
-
     # metadata = MetaData(bind=engine)
 
-    # # Gets list of Salesforce Objects
-    object_list = salesforce_get_objects()
-    object_list = [o.lower() for o in object_list]
-    object_list = ('opportunity', 'user', 'account')
-    exclude_objects = ('collaborationgrouprecord', 'contentdocumentlink', 'ideacomment', 'scontrol', 'vote')
+    object_list = objects_to_load()
+    prefix = settings.prefix
 
-    object_list = [o for o in object_list if o not in exclude_objects]
 
-    # object_list = exclude_objects
-
-    print object_list
-
-    prefix = "salesforce_"
 
     for object_name in object_list:
-        print "---------------------"
 
-        sf_table_name = str(object_name).lower()
+        sf_table_name = object_name
         object_name = prefix + sf_table_name
-        print sf_table_name
 
-
-        # Get Table Description From Salesforce
+        # Get Table Description From Salesforce and set the queryable variable
         sf_table_description = salesforce_table_description(sf_table_name)
-        # print sf_table_description
-        print "Got table description"
         queryable = sf_table_description["queryable"]
-        print queryable
+        logging.info('the %s object queryable is %s', object_name, queryable)
 
         if queryable is True:
             # Parse Salesforce Columns to list
             columns = salesforce_column_list(sf_table_description)
-            print "Created Column DDL"
 
             # Create Tables in PostgreSQL DB
             table = Table(object_name, metadata, *columns, extend_existing=True)
-            # metadata.create_all(engine)
             table.create(engine, checkfirst=True)
-            print "Created table"
+            logging.info('created table in database: %s', object_name)
 
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
-            print "Date Column For Updates:", date_column_for_updates
+            logging.info('selected date column for table updates: %s', date_column_for_updates)
 
             # # Check schema
             # postgresql_column_list(metadata, object_name)
@@ -291,7 +302,6 @@ def main():
 
                 # Get max in database
                 max_in_db = get_data_last_updated_timestamp(sess, date_column)
-                print "Got the max"
 
                 # Get Data and load data
                 get_and_load_data(engine, metadata, sf_table_name, object_name, table_definition, date_column, max_in_db)
