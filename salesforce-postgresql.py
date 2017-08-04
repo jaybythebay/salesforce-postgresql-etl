@@ -14,12 +14,12 @@ import settings
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String, Table)
 
 
-# Authenticate Salesforce
-sf = Salesforce(username=settings.salesforce_api['username'],
-                password=settings.salesforce_api['password'],
-                security_token=settings.salesforce_api['security_token'])
-
-
+# # Authenticate Salesforce
+# sf = Salesforce(username=settings.salesforce_api['username'],
+#                 password=settings.salesforce_api['password'],
+#                 security_token=settings.salesforce_api['security_token'])
+#
+#
 
 def salesforce_get_objects():
 
@@ -229,10 +229,10 @@ def main():
     metadata = MetaData()
 
     # https://docs.python.org/2/howto/logging.html
-    # logging.basicConfig(filename='example.log', level=logging.DEBUG)
-    # logging.debug('This message should go to the log file')
-    # logging.info('So should this')
-    # logging.warning('And this, too')
+    logging.basicConfig(filename='/Users/jayrosenthal/Desktop/example.log', level=logging.DEBUG)
+    logging.debug('This message should go to the log file')
+    logging.info('So should this')
+    logging.warning('And this, too')
 
     # metadata = MetaData(bind=engine)
 
