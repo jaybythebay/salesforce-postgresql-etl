@@ -219,6 +219,8 @@ def objects_to_load():
     object_list = salesforce_get_objects()
     object_list = [o.lower() for o in object_list]
 
+    logging.info('salesforce object list %s', object_list)
+
     if len(settings.object_whitelist) != 0:
         object_list = [o.lower() for o in settings.object_whitelist]
         logging.info('using the object whitelist: %s', settings.object_whitelist)
@@ -229,8 +231,8 @@ def objects_to_load():
         logging.info('removing objects from the blacklist: %s', settings.object_blacklist)
         print settings.object_blacklist
 
-    print object_list
-    logging.info('salesforce object list %s', object_list)
+
+    logging.info('object list to load data for %s', object_list)
 
 
     return object_list
