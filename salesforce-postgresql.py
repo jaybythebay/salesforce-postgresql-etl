@@ -269,7 +269,6 @@ def main():
     prefix = settings.prefix
 
 
-
     for object_name in object_list:
 
         sf_table_name = object_name

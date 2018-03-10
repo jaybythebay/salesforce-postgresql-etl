@@ -2,3 +2,4 @@ simple_salesforce
 sqlalchemy
 pandas
 logging
+sqlalchemy_utils
