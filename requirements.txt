@@ -1,0 +1,4 @@
+simple_salesforce
+sqlalchemy
+pandas
+logging
