@@ -23,5 +23,5 @@ object_blacklist = ('collaborationgrouprecord', 'contentdocumentlink', 'ideacomm
 # Object white list.  This are objects to use.  If this list contains values then salesforce will only get these objects.
 object_whitelist = ('opportunity', 'user', 'account')
 
-# Table prefix or target DB.  You must add a prefix to keep tables such as 'user' and 'case' to keep from interferring with Salesforce reserved words.
+# Table prefix.  You must add a prefix to keep tables such as 'user' and 'case' to keep from interferring with PostgreSQL reserved words.
 prefix = "salesforce_"
