@@ -238,12 +238,25 @@ def objects_to_load():
 
     logging.info('object list to load data for %s', object_list)
 
-
     return object_list
 
 
-def create_tmp_table():
-    pass
+def create_tmp_table(metadata, engine, columns, object_name):
+    table = Table('tmp', metadata, *columns, extend_existing=True)
+    table.create(engine, checkfirst=True)
+    logging.info('created tmp table in database: %s', object_name)
+
+
+def check_schemas(engine, object_name):
+    inspector = inspect(engine)
+    tmp_table = inspector.get_columns('tmp')
+    existing_table = inspector.get_columns(object_name)
+
+    # print tmp_table
+    # print existing_table
+
+    return tmp_table == existing_table
+
 
 def delete_tmp_table():
     pass
@@ -296,11 +309,44 @@ def main():
 
             # Parse Salesforce Columns to list
             columns = salesforce_column_list(sf_table_description)
-            print columns
+
+            # create a table with the schema retrieved from salesforce
+            create_tmp_table(metadata, engine, columns, object_name)
+
+            # check if the new table and the existing table have the same columns
+            match = check_schemas(engine, object_name)
+
+            #
+
+            # inspector = inspect(engine)
+            # tmp_table = metadata.tables['tmp']
+            # print tmp_table.columns.keys()
+            #
+            # existing_table = metadata.tables[object_name]
+            # print existing_table.columns.keys()
+            #
+            # print tmp_table.columns
+            # print existing_table.columns
+            #
+            # for c in tmp_table.columns:
+            #     print c
+            #
+            # match = tmp_table.columns == existing_table.columns
+            # print "match", match
+
+            # inspector = inspect(engine)
+            # tmp_table = inspector.get_columns('tmp')
+            # existing_table = inspector.get_columns(object_name)
+            #
+            # print tmp_table
+            # print existing_table
+            #
+            # match = tmp_table == existing_table
+            # print "match", match
 
             # Create Table Object
             # table = Table(object_name, metadata, *columns, extend_existing=True)
-            table = Table(sf_table_name, metadata, *columns)
+            # table = Table(sf_table_name, metadata, *columns)
             # print table
             # for c in table:
             #     print c
@@ -311,16 +357,16 @@ def main():
             # # for c in ex_table.columns:
             # #     print c
             #
-            inspector = inspect(engine)
-            print "table on the fly"
-            x = inspector.get_columns(object_name)
-            for s in x:
-                print s
-
-            print "salesforce table"
-            y = inspector.get_columns(object_name)
-            for s in y:
-                print s
+            # inspector = inspect(engine)
+            # print "table on the fly"
+            # x = inspector.get_columns(object_name)
+            # for s in x:
+            #     print s
+            #
+            # print "salesforce table"
+            # y = inspector.get_columns(object_name)
+            # for s in y:
+            #     print s
 
             # If table doesn't exist in the DB table is created.
             # If table does exist the schema is verified.
