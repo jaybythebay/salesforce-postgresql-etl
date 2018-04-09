@@ -241,26 +241,47 @@ def objects_to_load():
     return object_list
 
 
-def create_tmp_table(metadata, engine, columns, object_name):
-    table = Table('tmp', metadata, *columns, extend_existing=True)
+def postgresql_create_table(metadata, engine, columns, object_name):
+    table = Table(object_name, metadata, *columns, extend_existing=True)
     table.create(engine, checkfirst=True)
-    logging.info('created tmp table in database: %s', object_name)
+    logging.info('created table in database: %s', object_name)
 
 
 def check_schemas(engine, object_name):
     inspector = inspect(engine)
     tmp_table = inspector.get_columns('tmp')
-    existing_table = inspector.get_columns(object_name)
 
     # print tmp_table
-    # print existing_table
+    existing_table = inspector.get_columns(object_name)
+    #
+    #
+    #
+    print type(tmp_table)
+    for c in tmp_table:
+        print c
+        # print type(c)
+    #
+    print "eer"
+    print type(existing_table)
+    for e in existing_table:
+        print e
+        # print type(e)
 
-    return tmp_table == existing_table
+    # diff = [t for t in tmp_table if t not in existing_table]
+    # print diff
+
+    pairs = zip(tmp_table, existing_table)
+    return any(x != y for x, y in pairs)
+    # [(x, y) for x, y in pairs if x != y]
+    # # print tmp_table
+    # # print existing_table
+    #
+    # return tmp_table == existing_table
 
 
-def delete_tmp_table():
-    pass
-
+def postgresql_drop_table(engine, metadata, object_name):
+    table_to_drop = metadata.tables[object_name]
+    table_to_drop.drop(engine, checkfirst=True)
 
 
 def main():
@@ -310,70 +331,39 @@ def main():
             # Parse Salesforce Columns to list
             columns = salesforce_column_list(sf_table_description)
 
-            # create a table with the schema retrieved from salesforce
-            create_tmp_table(metadata, engine, columns, object_name)
+            # create a table if not in the database
+            if not engine.dialect.has_table(engine, object_name):
+                postgresql_create_table(metadata, engine, columns, object_name)
+                print "created the table"
 
-            # check if the new table and the existing table have the same columns
-            match = check_schemas(engine, object_name)
+            # create a table with the new schema
+            # check if the table schema has changed
+            # if it's changed drop and re-create the table
+            else:
+                print "table exists"
+                postgresql_create_table(metadata, engine, columns, object_name='tmp')
+                print "created tmp table"
+                match = check_schemas(engine, object_name)
+                print "match", match
 
-            #
+                # postgresql_drop_table(engine, metadata, object_name='tmp')
+                #
+                # if not match:
+                #     postgresql_drop_table(engine, metadata, object_name)
+                #     # postgresql_drop_table(engine, metadata, object_name='tmp')
+                #     print "dropped the tables"
+                #     postgresql_create_table(metadata, engine, columns, object_name)
+                #     print "Re-created the table"
 
-            # inspector = inspect(engine)
-            # tmp_table = metadata.tables['tmp']
-            # print tmp_table.columns.keys()
-            #
-            # existing_table = metadata.tables[object_name]
-            # print existing_table.columns.keys()
-            #
-            # print tmp_table.columns
-            # print existing_table.columns
-            #
-            # for c in tmp_table.columns:
-            #     print c
-            #
-            # match = tmp_table.columns == existing_table.columns
-            # print "match", match
+                # print "I am before the drop tmp statement"
+                # postgresql_drop_table(engine, metadata, object_name='tmp')
+                # print "dropped the tmp table"
 
-            # inspector = inspect(engine)
-            # tmp_table = inspector.get_columns('tmp')
-            # existing_table = inspector.get_columns(object_name)
-            #
-            # print tmp_table
-            # print existing_table
-            #
-            # match = tmp_table == existing_table
-            # print "match", match
 
-            # Create Table Object
-            # table = Table(object_name, metadata, *columns, extend_existing=True)
-            # table = Table(sf_table_name, metadata, *columns)
-            # print table
-            # for c in table:
-            #     print c
 
-            # # Get Table
-            # ex_table = metadata.tables[object_name]
-            # # print ex_table.columns.keys()
-            # # for c in ex_table.columns:
-            # #     print c
-            #
-            # inspector = inspect(engine)
-            # print "table on the fly"
-            # x = inspector.get_columns(object_name)
-            # for s in x:
-            #     print s
-            #
-            # print "salesforce table"
-            # y = inspector.get_columns(object_name)
-            # for s in y:
-            #     print s
 
-            # If table doesn't exist in the DB table is created.
-            # If table does exist the schema is verified.
-            # If table exists and the schema is changed it's dropped and re-created.
-            # if not engine.dialect.has_table(engine, sf_table_name):
-            #     table.create(engine, checkfirst=True)
-            #     logging.info('created table in database: %s', object_name)
+
+
             # else:
             #     schema_change = check_schema()
             #     Checks that the schema for the existing table is the same as salesforce.
