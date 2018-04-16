@@ -256,22 +256,49 @@ def check_schemas(engine, object_name):
     #
     #
     #
-    print type(tmp_table)
-    for c in tmp_table:
-        print c
-        # print type(c)
+
+    tmp_table_dict = {}
+    # print type(tmp_table)
+    for t in tmp_table:
+    #     # print c
+    #     # print type(c)
+    #     # print c["name"]
+    #     # tmp_table_dict[c["name"]] = c
+    #     # print c
+    #     # # print type(c["default"])
+    #     # # print type(c["autoincrement"])
+    #     # # print type(c["type"])
+    #     # # print type(c["nullable"])
+    #     print t["type"]
+        tmp_table_dict[t["name"]] = {"default": t["default"], "autoincrement": t["autoincrement"], "type": str(t["type"]), "nullable": t["nullable"]}
     #
-    print "eer"
+    #     # return class_.__table__.c[colname].type
+    #
+    print tmp_table_dict
+    # #
+    # print "eer"
     print type(existing_table)
+    existing_table_dict = {}
     for e in existing_table:
-        print e
-        # print type(e)
+        # existing_table_dict[e["name"]] = e
+        existing_table_dict[e["name"]] = {"default": e["default"], "autoincrement": e["autoincrement"], "type": str(e["type"]), "nullable": e["nullable"]}
 
-    # diff = [t for t in tmp_table if t not in existing_table]
-    # print diff
 
-    pairs = zip(tmp_table, existing_table)
-    return any(x != y for x, y in pairs)
+    # print type(tmp_table_dict["probability"]["type"])
+    # print existing_table_dict
+    # #     print e
+    #     # print type(e)
+    #
+    # # diff = [t for t in tmp_table if t not in existing_table]
+    # # print diff
+    #
+    # # print len(tmp_table)
+    # # print len(existing_table)
+    # # #
+    return cmp(tmp_table_dict, existing_table_dict)
+
+    # pairs = zip(tmp_table, existing_table)
+    # return any(x != y for x, y in pairs)
     # [(x, y) for x, y in pairs if x != y]
     # # print tmp_table
     # # print existing_table
@@ -346,7 +373,7 @@ def main():
                 match = check_schemas(engine, object_name)
                 print "match", match
 
-                # postgresql_drop_table(engine, metadata, object_name='tmp')
+                postgresql_drop_table(engine, metadata, object_name='tmp')
                 #
                 # if not match:
                 #     postgresql_drop_table(engine, metadata, object_name)
