@@ -7,7 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import reflection
 import pandas as pd
 import logging
-# from migrate import rename
+# # from migrate import rename
+# import migrate.versioning.api
+from migrate.changeset.schema import rename_table
 
 
 
@@ -274,13 +276,15 @@ def check_schemas(engine, object_name):
     return cmp(tmp_table_dict, existing_table_dict)
 
 
-def rename_table(engine, object_name):
+# def rename_table(engine, metadata, object_name):
+#     table_to_rename = metadata.tables['tmp']
+#     migrate(table_to_rename.rename('newtablename'))
     # inspector = inspect(engine)
     # tmp_table = inspector.get_columns('tmp')
-    metadata = MetaData()
-    metadata.reflect(engine, only=['tmp'])
-
-    tmp = Table()
+    # metadata = MetaData()
+    # metadata.reflect(engine, only=['tmp'])
+    #
+    # tmp = Table()
 
     # # we can then produce a set of mappings from this MetaData.
     # Base = automap_base(metadata=metadata)
@@ -311,14 +315,14 @@ def main():
 
     logging.info('connected to and created if needed: %s', engine.url)
 
-    session = sessionmaker()
-    session.configure(bind=engine)
-    sess = session()
+    # session = sessionmaker()
+    # session.configure(bind=engine)
+    # sess = session()
 
     # data = pd.read_sql('SELECT count(1) FROM accountfeed', engine)
     # print data
 
-    # metadata = MetaData()
+    metadata = MetaData()
     # metadata = MetaData(bind=engine)
     metadata = MetaData(engine, reflect=True)
 
@@ -357,8 +361,8 @@ def main():
                 match = check_schemas(engine, object_name)
                 print "match", match
 
-                postgresql_drop_table(engine, metadata, object_name='tmp')
-                metadata = MetaData(engine)
+                # postgresql_drop_table(engine, metadata, object_name='tmp')
+                # metadata = MetaData(engine)
 
                 if match != 0:
                     # metadata = MetaData(engine, reflect=True)
@@ -366,11 +370,15 @@ def main():
                     # table.rename('newtablename')
                     # postgresql_drop_table(engine, metadata, object_name='tmp')
                     postgresql_drop_table(engine, metadata, object_name)
+                    rename_table(table='tmp', name=object_name, engine=engine)
+
+                    # metadata = MetaData(engine)
+
                     # print "dropped the data table"
-                    postgresql_create_table(metadata, engine, columns, object_name)
+                    # postgresql_create_table(metadata, engine, columns, object_name)
                     # print "Re-created the table"
-                # else:
-                    # postgresql_drop_table(engine, metadata, object_name='tmp')
+                else:
+                    postgresql_drop_table(engine, metadata, object_name='tmp')
 
 
                 # print "I am before the drop tmp statement"
