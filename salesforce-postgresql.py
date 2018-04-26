@@ -118,11 +118,6 @@ def salesforce_column_list(sf_table_description):
     return column_lst
 
 
-def check_schema():
-    pass
-
-
-
 def get_data_last_updated_timestamp(sess, date_column):
 
     max_in_db = sess.query(func.max(date_column)).one()[0]
@@ -315,9 +310,9 @@ def main():
 
     logging.info('connected to and created if needed: %s', engine.url)
 
-    # session = sessionmaker()
-    # session.configure(bind=engine)
-    # sess = session()
+    session = sessionmaker()
+    session.configure(bind=engine)
+    sess = session()
 
     # data = pd.read_sql('SELECT count(1) FROM accountfeed', engine)
     # print data
@@ -395,24 +390,24 @@ def main():
             #     Checks that the schema for the existing table is the same as salesforce.
             #     If the schema has changed it drops the existing tabler
             # #
-            # # Select the proper date field to use for identifying new data
-            # date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
-            # logging.info('selected date column for table updates: %s', date_column_for_updates)
+            # Select the proper date field to use for identifying new data
+            date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
+            logging.info('selected date column for table updates: %s', date_column_for_updates)
             #
             # # # Check schema
             # # postgresql_column_list(metadata, object_name)
             # # check_schema_change()
             #
-            # if date_column_for_updates is not None:
-            #     # Create metadata for queries
-            #     table_definition = Table(object_name, metadata, autoload=True)
-            #     date_column = table_definition.columns[date_column_for_updates]
-            #
-            #     # Get max in database
-            #     max_in_db = get_data_last_updated_timestamp(sess, date_column)
-            #
-            #     # Get Data and load data
-            #     get_and_load_data(engine, metadata, sf_table_name, object_name, table_definition, date_column, max_in_db)
+            if date_column_for_updates is not None:
+                # Create metadata for queries
+                table_definition = Table(object_name, metadata, autoload=True)
+                date_column = table_definition.columns[date_column_for_updates]
+
+                # Get max in database
+                max_in_db = get_data_last_updated_timestamp(sess, date_column)
+
+                # Get Data and load data
+                get_and_load_data(engine, metadata, sf_table_name, object_name, table_definition, date_column, max_in_db)
 
 
 if __name__ == '__main__':
