@@ -344,52 +344,26 @@ def main():
             # create a table if not in the database
             if not engine.dialect.has_table(engine, object_name):
                 postgresql_create_table(metadata, engine, columns, object_name)
-                print "created the table"
+                print object_name, "created the table"
 
             # create a table with the new schema
             # check if the table schema has changed
             # if it's changed drop and re-create the table
             else:
-                print "table exists"
+                print object_name, "checking for schema changes"
                 postgresql_create_table(metadata, engine, columns, object_name='tmp')
-                print "created tmp table"
                 match = check_schemas(engine, object_name)
-                print "match", match
-
-                # postgresql_drop_table(engine, metadata, object_name='tmp')
-                # metadata = MetaData(engine)
+                print object_name, "no schema changes", match
 
                 if match != 0:
-                    # metadata = MetaData(engine, reflect=True)
-                    # rename_table(engine, object_name)
-                    # table.rename('newtablename')
-                    # postgresql_drop_table(engine, metadata, object_name='tmp')
                     postgresql_drop_table(engine, metadata, object_name)
                     rename_table(table='tmp', name=object_name, engine=engine)
+                    print object_name, "schema changes applied"
 
-                    # metadata = MetaData(engine)
-
-                    # print "dropped the data table"
-                    # postgresql_create_table(metadata, engine, columns, object_name)
-                    # print "Re-created the table"
                 else:
                     postgresql_drop_table(engine, metadata, object_name='tmp')
 
 
-                # print "I am before the drop tmp statement"
-                # postgresql_drop_table(engine, metadata, object_name='tmp')
-                # print "dropped the tmp table"
-
-
-
-
-
-
-            # else:
-            #     schema_change = check_schema()
-            #     Checks that the schema for the existing table is the same as salesforce.
-            #     If the schema has changed it drops the existing tabler
-            # #
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
             logging.info('selected date column for table updates: %s', date_column_for_updates)
