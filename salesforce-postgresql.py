@@ -255,6 +255,7 @@ def check_schemas(engine, object_name):
     for e in existing_table:
         existing_table_dict[e["name"]] = {"default": e["default"], "autoincrement": e["autoincrement"], "type": str(e["type"]), "nullable": e["nullable"]}
 
+    logging.info('created table in database: %s', object_name)
     print tmp_table_dict
     print existing_table_dict
     return cmp(tmp_table_dict, existing_table_dict)
