@@ -1,7 +1,6 @@
 from os import environ
 
 # Salesforce API credentials
-# # Jay DEV
 salesforce_api = {'username': environ.get('SALESFORCE_USERNAME'),
                   'password': environ.get('SALESFORCE_PASSWORD'),
                   'security_token': environ.get('SALESFORCE_SECURITY_TOKEN')
@@ -16,7 +15,6 @@ DATABASE = {
     'password': environ.get('TARGET_PASSWORD'),
     'database': environ.get('TARGET_DATABASE')
 }
-
 
 # The path and name for where to write the log file
 log_file_path = '/Users/jayrosenthal/Desktop/salesforce_etl.log'
