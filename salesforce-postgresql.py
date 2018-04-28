@@ -353,7 +353,7 @@ def main():
                 print object_name, "checking for schema changes"
                 postgresql_create_table(metadata, engine, columns, object_name='tmp')
                 match = check_schemas(engine, object_name)
-                print object_name, "no schema changes", match
+                print object_name, "schema match score", match
 
                 if match != 0:
                     postgresql_drop_table(engine, metadata, object_name)
@@ -362,6 +362,7 @@ def main():
 
                 else:
                     postgresql_drop_table(engine, metadata, object_name='tmp')
+                    print object_name, "no schema changes"
 
 
             # Select the proper date field to use for identifying new data
@@ -369,6 +370,11 @@ def main():
             logging.info('selected date column for table updates: %s', date_column_for_updates)
 
             if date_column_for_updates is not None:
+
+                # Reset the metadata
+                metadata = MetaData()
+                metadata = MetaData(engine, reflect=True)
+
                 # Create metadata for queries
                 table_definition = Table(object_name, metadata, autoload=True)
                 date_column = table_definition.columns[date_column_for_updates]
