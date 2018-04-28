@@ -1,28 +1,25 @@
 from simple_salesforce import Salesforce
-from sqlalchemy import *
-from sqlalchemy.engine.url import URL
-from sqlalchemy_utils import database_exists, create_database, get_type
-from sqlalchemy import select, func
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.engine import reflection
 import pandas as pd
 import logging
-# # from migrate import rename
-# import migrate.versioning.api
 from migrate.changeset.schema import rename_table
 
-
+from sqlalchemy.engine import reflection, create_engine
+from sqlalchemy.engine.url import URL
+from sqlalchemy.schema import MetaData, Table, Column
+from sqlalchemy.inspection import inspect
+from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.expression import select, text
+from sqlalchemy.sql.functions import func
+from sqlalchemy.sql.sqltypes import DateTime, Float, String
 
 import settings
-
-from sqlalchemy import (create_engine, MetaData, Column, Integer, String, Table)
 
 
 # Authenticate Salesforce
 sf = Salesforce(username=settings.salesforce_api['username'],
                 password=settings.salesforce_api['password'],
                 security_token=settings.salesforce_api['security_token'])
-
 
 
 def salesforce_get_objects():
@@ -155,7 +152,6 @@ def get_and_load_data(engine, metadata, sf_table_name, object_name, table_defini
     df = parse_data(lst)
     delete_updated_records(df, object_name, metadata, engine)
     load_data(df, object_name, engine)
-
 
     if data.has_key("nextRecordsUrl"):
         next_records_url = data["nextRecordsUrl"]
