@@ -1,6 +1,7 @@
 from simple_salesforce import Salesforce
 import pandas as pd
 import logging
+from tabulate import tabulate
 from migrate.changeset.schema import rename_table
 
 from sqlalchemy_utils import database_exists, create_database
@@ -194,11 +195,11 @@ def load_data(df, object_name, engine, print_df=False):
 
     try:
         df.to_sql(object_name, engine, if_exists='append', index=False)
-        logging.info('data loaded for %s: %s rows', object_name, df.shape[0])
-        print "data loaded for:", object_name, df.shape[0], "rows"
+        logging.info(' %s - data loaded %s rows', object_name.upper(), df.shape[0])
+        print object_name.upper(), "loaded", df.shape[0], "row(s)"
 
     except Exception as e:
-        logging.warning('error loading data for %s message: %s', object_name, e.message)
+        logging.warning(' %s - error loading data - message: %s', object_name.upper(), e.message)
         print(e.message)
 
 
@@ -207,11 +208,9 @@ def delete_updated_records(df, object_name, metadata, engine):
     table = metadata.tables[object_name]
 
     if not df.empty:
-        idlist = df['id'].tolist()
-        # print idlist
-
-        delete_statement = table.delete().where(table.c.id.in_(idlist))
-        # print delete_statement
+        id_list = df['id'].tolist()
+        delete_statement = table.delete().where(table.c.id.in_(id_list))
+        logging.info(' %s - delete statement %s', object_name.upper(), delete_statement)
         engine.execute(delete_statement)
 
 
@@ -232,7 +231,6 @@ def objects_to_load():
         object_list = [o for o in object_list if o.lower() not in object_blacklist]
         logging.info('removing objects from the blacklist: %s', settings.object_blacklist)
         print settings.object_blacklist
-
 
     logging.info('object list to load data for %s', object_list)
 
@@ -258,12 +256,12 @@ def check_schemas(engine, object_name):
     for e in existing_table:
         existing_table_dict[e["name"]] = {"default": e["default"], "autoincrement": e["autoincrement"], "type": str(e["type"]), "nullable": e["nullable"]}
 
-    logging.info('created table in database: %s', object_name)
-    print tmp_table_dict
-    print existing_table_dict
+    logging.info(' %s - tmp table dict %s', object_name.upper(), tmp_table_dict)
+    logging.info(' %s - existing table dict %s', object_name.upper(), existing_table_dict)
     return cmp(tmp_table_dict, existing_table_dict)
 
     tmp.rename(object_name)
+
 
 def postgresql_drop_table(engine, metadata, object_name):
     table_to_drop = metadata.tables[object_name]
@@ -290,16 +288,11 @@ def main():
     session.configure(bind=engine)
     sess = session()
 
-    # data = pd.read_sql('SELECT count(1) FROM accountfeed', engine)
-    # print data
-
     metadata = MetaData()
-    # metadata = MetaData(bind=engine)
     metadata = MetaData(engine, reflect=True)
 
     object_list = objects_to_load()
     prefix = settings.prefix
-
 
     for object_name in object_list:
 
@@ -309,10 +302,10 @@ def main():
         # Get Table Description From Salesforce and set the queryable variable
         sf_table_description = salesforce_table_description(sf_table_name)
         queryable = sf_table_description["queryable"]
-        logging.info('the %s object queryable is %s', object_name, queryable)
+        logging.info(' %s - object queryable %s', object_name.upper(), queryable)
 
         if queryable is True:
-            print object_name
+            print object_name.upper()
 
             # Parse Salesforce Columns to list
             columns = salesforce_column_list(sf_table_description)
@@ -320,30 +313,30 @@ def main():
             # create a table if not in the database
             if not engine.dialect.has_table(engine, object_name):
                 postgresql_create_table(metadata, engine, columns, object_name)
-                print object_name, "created the table"
+                logging.info(' %s - created the table', object_name.upper())
 
             # create a table with the new schema
             # check if the table schema has changed
             # if it's changed drop and re-create the table
             else:
-                print object_name, "checking for schema changes"
+                print object_name.upper(), "checking for schema changes"
                 postgresql_create_table(metadata, engine, columns, object_name='tmp')
                 match = check_schemas(engine, object_name)
-                print object_name, "schema match score", match
+                logging.info(' %s - schema match score = %s', object_name.upper(), match)
 
                 if match != 0:
                     postgresql_drop_table(engine, metadata, object_name)
                     rename_table(table='tmp', name=object_name, engine=engine)
-                    print object_name, "schema changes applied"
-
+                    print object_name.upper(), "schema changes applied"
+                    logging.info(' %s - schema changes applied', object_name.upper())
                 else:
                     postgresql_drop_table(engine, metadata, object_name='tmp')
-                    print object_name, "no schema changes"
-
+                    print object_name.upper(), "no schema changes needed"
+                    logging.info(' %s - no schema changes needed', object_name.upper())
 
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
-            logging.info('selected date column for table updates: %s', date_column_for_updates)
+            logging.info(' %s - selected date column for table updates: %s', object_name.upper(), date_column_for_updates)
 
             if date_column_for_updates is not None:
 
