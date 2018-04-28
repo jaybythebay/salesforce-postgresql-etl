@@ -16,7 +16,6 @@ from sqlalchemy.sql.sqltypes import DateTime, Float, String
 
 import settings
 
-
 # Authenticate Salesforce
 sf = Salesforce(username=settings.salesforce_api['username'],
                 password=settings.salesforce_api['password'],
