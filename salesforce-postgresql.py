@@ -242,12 +242,6 @@ def postgresql_create_table(metadata, engine, columns, object_name):
     logging.info('created table in database: %s', object_name)
 
 
-def postgresql_create_table_no_extend(metadata, engine, columns, object_name):
-    table = Table(object_name, metadata, *columns)
-    table.create(engine, checkfirst=True)
-    logging.info('created table in database: %s', object_name)
-
-
 def check_schemas(engine, object_name):
     inspector = inspect(engine)
     tmp_table = inspector.get_columns('tmp')
@@ -261,27 +255,9 @@ def check_schemas(engine, object_name):
     for e in existing_table:
         existing_table_dict[e["name"]] = {"default": e["default"], "autoincrement": e["autoincrement"], "type": str(e["type"]), "nullable": e["nullable"]}
 
-
     print tmp_table_dict
     print existing_table_dict
     return cmp(tmp_table_dict, existing_table_dict)
-
-
-# def rename_table(engine, metadata, object_name):
-#     table_to_rename = metadata.tables['tmp']
-#     migrate(table_to_rename.rename('newtablename'))
-    # inspector = inspect(engine)
-    # tmp_table = inspector.get_columns('tmp')
-    # metadata = MetaData()
-    # metadata.reflect(engine, only=['tmp'])
-    #
-    # tmp = Table()
-
-    # # we can then produce a set of mappings from this MetaData.
-    # Base = automap_base(metadata=metadata)
-    #
-    # # calling prepare() just sets up mapped classes and relationships.
-    # Base.prepare()
 
     tmp.rename(object_name)
 
