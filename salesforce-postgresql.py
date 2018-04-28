@@ -187,7 +187,10 @@ def parse_data(lst):
     return df
 
 
-def load_data(df, object_name, engine):
+def load_data(df, object_name, engine, print_df=False):
+
+    if print_df:
+        print tabulate(df, headers='keys', tablefmt='psql')
 
     try:
         df.to_sql(object_name, engine, if_exists='append', index=False)
