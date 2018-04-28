@@ -393,11 +393,7 @@ def main():
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
             logging.info('selected date column for table updates: %s', date_column_for_updates)
-            #
-            # # # Check schema
-            # # postgresql_column_list(metadata, object_name)
-            # # check_schema_change()
-            #
+
             if date_column_for_updates is not None:
                 # Create metadata for queries
                 table_definition = Table(object_name, metadata, autoload=True)
