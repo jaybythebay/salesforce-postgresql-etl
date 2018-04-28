@@ -3,4 +3,5 @@ sqlalchemy
 pandas
 logging
 sqlalchemy_utils
+migrate
 tabulate
