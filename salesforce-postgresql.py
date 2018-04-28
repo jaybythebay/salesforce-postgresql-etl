@@ -5,6 +5,7 @@ from sqlalchemy_utils import database_exists, create_database, get_type
 from sqlalchemy import select, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import reflection
+from tabulate import tabulate
 import pandas as pd
 import logging
 
@@ -188,7 +189,10 @@ def parse_data(lst):
     return df
 
 
-def load_data(df, object_name, engine):
+def load_data(df, object_name, engine, print_df=False):
+
+    if print_df:
+        print tabulate(df, headers='keys', tablefmt='psql')
 
     try:
         df.to_sql(object_name, engine, if_exists='append', index=False)
@@ -291,10 +295,6 @@ def main():
             # Select the proper date field to use for identifying new data
             date_column_for_updates = salesforce_date_column_for_updates(engine, object_name)
             logging.info('selected date column for table updates: %s', date_column_for_updates)
-
-            # # Check schema
-            # postgresql_column_list(metadata, object_name)
-            # check_schema_change()
 
             if date_column_for_updates is not None:
                 # Create metadata for queries
