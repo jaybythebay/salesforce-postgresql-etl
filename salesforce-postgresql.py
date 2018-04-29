@@ -80,7 +80,6 @@ def salesforce_column_list(sf_table_description):
     column_lst = []
     salesforce_column_dict = {}
 
-
     for i in items:
         if i[0] == "fields":
             field_list = i[1]
@@ -140,7 +139,6 @@ def get_and_load_data(engine, metadata, sf_table_name, object_name, table_defini
     # stmt = select([table], table.c.systemmodstamp >= text(max_in_db))
     stmt = select([table_definition], date_column >= text(max_in_db))
     logging.info('database select statement from sqlalchemy: %s', stmt)
-
 
     string_query = str(stmt)
     salesforce_query = string_query.replace(object_name, sf_table_name)
